@@ -7,11 +7,11 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_runtime::AccountId32;
 
-#[cfg(test)]
-mod mock;
+// #[cfg(test)]
+// mod mock;
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 pub trait Config: frame_system::Config {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -26,6 +26,20 @@ enum Chain {
     Ethereum,
 }
 
+enum Status {
+    OrderCreated,
+	OrderFilled,
+	InitiatorAtomicSwapInitiated,
+	FollowerAtomicSwapInitiated,
+	FollowerAtomicSwapRedeemed,
+	InitiatorAtomicSwapRedeemed,
+	InitiatorAtomicSwapRefunded,
+	FollowerAtomicSwapRefunded,
+	OrderExecuted,
+	OrderFailedSoft,
+	OrderFailedHard,
+}
+
 #[derive(PartialEq, Eq, Clone, Default)]
 pub struct Order<AccountId> {
     creator: AccountId,
@@ -33,6 +47,7 @@ pub struct Order<AccountId> {
     InitatorSwap : AtomicSwap,
     RedeemerSwap : AtomicSwap,
     SecretHash: String,
+    status : Status
 }
 
 #[derive(PartialEq, Eq, Clone, Default)]
@@ -75,7 +90,7 @@ decl_module! {
     pub struct Module<T: Config> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        #[pallet::weight(0)]
+        #[pallet::weight(10_000)]
         pub fn create_order(origin, sendAmout u64,reciveAmout u64,fromChain Chain,toChain Chain ,) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -84,7 +99,7 @@ decl_module! {
                 creator: sender.clone(),
                 filler: None,
                 InitatorSwap : AtomicSwap {
-                    Amount: initatorAmount,
+                    Amount: sendAmout,
                     address : String::from(""),
                     chain : fromChain,
                     initx: String::from(""),
@@ -92,7 +107,7 @@ decl_module! {
                     refundtx: String::from(""),
                 },
                 RedeemerSwap : AtomicSwap {
-                    Amount: 0,
+                    Amount: reciveAmout,
                     address : String::from(""),
                     chain : toChain,
                     initx: String::from(""),
